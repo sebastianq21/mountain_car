@@ -1,0 +1,8 @@
+Episode 25/200 | Avg Reward: 23.56 | Epsilon: 0.6035 | Buffer: 589
+Episode 50/200 | Avg Reward: 53.60 | Epsilon: 0.3642 | Buffer: 1929
+Episode 75/200 | Avg Reward: 164.32 | Epsilon: 0.2198 | Buffer: 6037
+Episode 100/200 | Avg Reward: 288.48 | Epsilon: 0.1326 | Buffer: 13249
+Episode 125/200 | Avg Reward: 155.68 | Epsilon: 0.0800 | Buffer: 17141
+Episode 150/200 | Avg Reward: 193.40 | Epsilon: 0.0483 | Buffer: 21976
+Episode 175/200 | Avg Reward: 202.04 | Epsilon: 0.0291 | Buffer: 27027
+Episode 200/200 | Avg Reward: 133.28 | Epsilon: 0.0176 | Buffer: 30359

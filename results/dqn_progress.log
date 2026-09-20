@@ -1,0 +1,57 @@
+Episode 100/100 | Avg Reward: -199.22 | Epsilon: 0.6058 | Buffer: 19922
+ep  100 | entrenamiento (prom. 100 ep):  -199.2 | evaluacion congelada:  -200.0 | llegan  0/30
+   -> nuevo mejor modelo (eval -200.0) guardado
+Episode 100/100 | Avg Reward: -199.97 | Epsilon: 0.3670 | Buffer: 39919
+ep  200 | entrenamiento (prom. 100 ep):  -200.0 | evaluacion congelada:  -200.0 | llegan  0/30
+Episode 100/100 | Avg Reward: -200.00 | Epsilon: 0.2223 | Buffer: 59919
+ep  300 | entrenamiento (prom. 100 ep):  -200.0 | evaluacion congelada:  -200.0 | llegan  0/30
+Episode 100/100 | Avg Reward: -199.11 | Epsilon: 0.1347 | Buffer: 79830
+ep  400 | entrenamiento (prom. 100 ep):  -199.1 | evaluacion congelada:  -177.0 | llegan 21/30
+   -> nuevo mejor modelo (eval -177.0) guardado
+Episode 100/100 | Avg Reward: -194.90 | Epsilon: 0.0816 | Buffer: 99320
+ep  500 | entrenamiento (prom. 100 ep):  -194.9 | evaluacion congelada:  -200.0 | llegan  0/30
+Episode 100/100 | Avg Reward: -195.00 | Epsilon: 0.0494 | Buffer: 100000
+ep  600 | entrenamiento (prom. 100 ep):  -195.0 | evaluacion congelada:  -200.0 | llegan  0/30
+Episode 100/100 | Avg Reward: -192.50 | Epsilon: 0.0299 | Buffer: 100000
+ep  700 | entrenamiento (prom. 100 ep):  -192.5 | evaluacion congelada:  -193.4 | llegan 12/30
+Episode 100/100 | Avg Reward: -162.39 | Epsilon: 0.0181 | Buffer: 100000
+ep  800 | entrenamiento (prom. 100 ep):  -162.4 | evaluacion congelada:  -145.8 | llegan 16/30
+   -> nuevo mejor modelo (eval -145.8) guardado
+Episode 100/100 | Avg Reward: -132.68 | Epsilon: 0.0110 | Buffer: 100000
+ep  900 | entrenamiento (prom. 100 ep):  -132.7 | evaluacion congelada:  -142.6 | llegan 17/30
+   -> nuevo mejor modelo (eval -142.6) guardado
+Episode 100/100 | Avg Reward: -135.30 | Epsilon: 0.0100 | Buffer: 100000
+ep 1000 | entrenamiento (prom. 100 ep):  -135.3 | evaluacion congelada:  -104.3 | llegan 30/30
+   -> nuevo mejor modelo (eval -104.3) guardado
+Episode 100/100 | Avg Reward: -116.01 | Epsilon: 0.0100 | Buffer: 100000
+ep 1100 | entrenamiento (prom. 100 ep):  -116.0 | evaluacion congelada:  -107.4 | llegan 30/30
+Episode 100/100 | Avg Reward: -108.39 | Epsilon: 0.0100 | Buffer: 100000
+ep 1200 | entrenamiento (prom. 100 ep):  -108.4 | evaluacion congelada:   -98.7 | llegan 30/30
+   -> nuevo mejor modelo (eval -98.7) guardado
+Episode 100/100 | Avg Reward: -107.91 | Epsilon: 0.0100 | Buffer: 100000
+ep 1300 | entrenamiento (prom. 100 ep):  -107.9 | evaluacion congelada:  -117.4 | llegan 30/30
+Episode 100/100 | Avg Reward: -110.52 | Epsilon: 0.0100 | Buffer: 100000
+ep 1400 | entrenamiento (prom. 100 ep):  -110.5 | evaluacion congelada:   -96.2 | llegan 30/30
+   -> nuevo mejor modelo (eval -96.2) guardado
+Episode 100/100 | Avg Reward: -102.30 | Epsilon: 0.0100 | Buffer: 100000
+ep 1500 | entrenamiento (prom. 100 ep):  -102.3 | evaluacion congelada:  -102.5 | llegan 30/30
+Episode 100/100 | Avg Reward: -110.79 | Epsilon: 0.0100 | Buffer: 100000
+ep 1600 | entrenamiento (prom. 100 ep):  -110.8 | evaluacion congelada:  -106.0 | llegan 29/30
+Episode 100/100 | Avg Reward: -107.71 | Epsilon: 0.0100 | Buffer: 100000
+ep 1700 | entrenamiento (prom. 100 ep):  -107.7 | evaluacion congelada:  -104.9 | llegan 30/30
+Episode 100/100 | Avg Reward: -114.53 | Epsilon: 0.0100 | Buffer: 100000
+ep 1800 | entrenamiento (prom. 100 ep):  -114.5 | evaluacion congelada:   -99.0 | llegan 30/30
+Episode 100/100 | Avg Reward: -104.25 | Epsilon: 0.0100 | Buffer: 100000
+ep 1900 | entrenamiento (prom. 100 ep):  -104.2 | evaluacion congelada:  -106.1 | llegan 30/30
+Episode 100/100 | Avg Reward: -114.20 | Epsilon: 0.0100 | Buffer: 100000
+ep 2000 | entrenamiento (prom. 100 ep):  -114.2 | evaluacion congelada:  -109.3 | llegan 30/30
+Episode 100/100 | Avg Reward: -106.55 | Epsilon: 0.0100 | Buffer: 100000
+ep 2100 | entrenamiento (prom. 100 ep):  -106.5 | evaluacion congelada:  -102.1 | llegan 30/30
+Episode 100/100 | Avg Reward: -105.17 | Epsilon: 0.0100 | Buffer: 100000
+ep 2200 | entrenamiento (prom. 100 ep):  -105.2 | evaluacion congelada:  -109.9 | llegan 30/30
+Episode 100/100 | Avg Reward: -117.20 | Epsilon: 0.0100 | Buffer: 100000
+ep 2300 | entrenamiento (prom. 100 ep):  -117.2 | evaluacion congelada:  -109.6 | llegan 30/30
+Episode 100/100 | Avg Reward: -110.84 | Epsilon: 0.0100 | Buffer: 100000
+ep 2400 | entrenamiento (prom. 100 ep):  -110.8 | evaluacion congelada:  -114.5 | llegan 30/30
+Episode 100/100 | Avg Reward: -112.41 | Epsilon: 0.0100 | Buffer: 100000
+ep 2500 | entrenamiento (prom. 100 ep):  -112.4 | evaluacion congelada:  -100.3 | llegan 30/30

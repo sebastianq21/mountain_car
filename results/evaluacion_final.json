@@ -1,0 +1,16 @@
+{
+  "qlearning": {
+    "training_episodes": 20000,
+    "eval_episodes": 100,
+    "mean_reward": -144.09,
+    "std_reward": 4.90936859483987,
+    "reached_flag": 100
+  },
+  "dqn": {
+    "training_episodes": 1400,
+    "eval_episodes": 100,
+    "mean_reward": -99.9,
+    "std_reward": 8.868483523128406,
+    "reached_flag": 100
+  }
+}
