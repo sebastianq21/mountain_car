@@ -1,0 +1,5 @@
+p = 0.0  ->   0 de 300 llegan a la bandera
+p = 0.5  ->   0 de 300 llegan a la bandera
+p = 0.8  ->   3 de 300 llegan a la bandera
+p = 0.9  ->  13 de 300 llegan a la bandera
+p = 0.95 ->  30 de 300 llegan a la bandera
