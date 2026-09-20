@@ -101,6 +101,7 @@ class DQNAgent:
         buffer_capacity: int = 100_000,
         target_update_freq: int = 10,
         hidden: int = 128,
+        repeat_prob: float = 0.9,
     ) -> None:
         self.env_id = env_id
         self.lr = lr
@@ -112,6 +113,8 @@ class DQNAgent:
         self.buffer_capacity = buffer_capacity
         self.target_update_freq = target_update_freq
         self.hidden = hidden
+        self.repeat_prob = repeat_prob
+        self._last_action = None
         self.training_episodes = 0
 
         env = gym.make(env_id)
@@ -152,7 +155,11 @@ class DQNAgent:
         to diagnose it from your own measurements first.
         """
         if not deterministic and random.random() < self.epsilon:
-            return random.randrange(self.action_dim)
+            if self._last_action is not None and random.random() < self.repeat_prob:
+                return self._last_action
+            self._last_action = random.randrange(self.action_dim)
+            return self._last_action
+
         with torch.no_grad():
             t = torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
             return int(self.q_net(t).argmax(dim=1).item())
@@ -225,6 +232,7 @@ class DQNAgent:
 
         for episode in range(1, total_episodes + 1):
             obs, _ = env.reset()
+            self._last_action = None
             total_reward = 0.0
             done = False
 
@@ -273,6 +281,7 @@ class DQNAgent:
         "buffer_capacity",
         "target_update_freq",
         "hidden",
+        "repeat_prob",
     )
 
     def save(self, path: Path) -> None:
