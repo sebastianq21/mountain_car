@@ -27,6 +27,17 @@ se considera "resuelto" un promedio de -110 o mejor.
 
 ![Comparación entre Q-Learning y DQN](results/fig_comparacion.png)
 
+
+Una vez finalizado el entrenamiento, evaluamos ambos agentes en 100 episodios sin exploración. Los dos lograron alcanzar la meta en todos los episodios, aunque presentaron diferencias en su desempeño.
+
+Q-Learning obtuvo una recompensa media de -144,1, mientras que DQN alcanzó -99,9. Dado que el entorno asigna una recompensa de -1 por paso, estos resultados indican que DQN necesitó, en promedio, menos pasos para llegar a la bandera.
+
+Durante el entrenamiento, DQN mostró una mejora considerable a partir de aproximadamente 700 episodios, mientras que Q-Learning presentó una evolución más gradual. El umbral de -110 incluido en la gráfica permite visualizar la evolución de la recompensa promedio, pero no determina por sí solo si el agente alcanza la meta.
+
+Q-Learning se entrenó durante 20.000 episodios y DQN durante 1.400. Sin embargo, esta diferencia no implica necesariamente un menor costo computacional para DQN, debido a las diferencias entre ambos métodos.
+
+En conclusión, ambos agentes lograron resolver el problema, aunque DQN alcanzó la meta utilizando menos pasos en promedio durante la evaluación. Para obtener conclusiones más generales, sería necesario repetir los experimentos con diferentes semillas aleatorias y comparar la estabilidad de los resultados.
+
 ## 1. El entorno
 
 Un carro poco potente está en un valle y debe llegar a la bandera (posición `0.5`). Su motor no alcanza para subir
@@ -246,6 +257,21 @@ cp saves/dqn_best.pt saves/dqn_mountaincar.pt                         # dejar el
 uv run python scripts/evaluate_agents.py                              # evaluación final (100 episodios)
 uv run python scripts/make_plots.py                                   # gráficas de results/
 ```
+## 9. Concluiones 
+El desarrollo de este proyecto nos permitió implementar y comparar dos métodos de aprendizaje por refuerzo para resolver el problema MountainCar-v0.
+
+El principal desafío del entorno consiste en que el vehículo no tiene suficiente potencia para alcanzar directamente la meta. Por esta razón, el agente debe aprender una secuencia de acciones que le permita acumular impulso y llegar a la bandera.
+
+Durante el desarrollo del proyecto encontramos que la estrategia de exploración tiene un papel importante en el aprendizaje. En particular, el agente DQN presentó dificultades para encontrar una política que le permitiera alcanzar la meta mediante la exploración convencional. Para abordar esta situación, se incorporó una estrategia que favorece la repetición de acciones durante la exploración.
+
+Los resultados finales muestran que ambos agentes lograron resolver el problema en los episodios de evaluación. Q-Learning alcanzó una recompensa media de -144,1 y DQN obtuvo una recompensa media de -99,9.
+
+A partir de estos resultados, identificamos que DQN logró alcanzar la meta utilizando menos pasos en promedio, mientras que Q-Learning también consiguió completar la tarea mediante una representación discretizada de los estados.
+
+Como oportunidad de mejora, consideramos importante realizar nuevos experimentos con diferentes semillas aleatorias y configuraciones de hiperparámetros. Esto permitiría evaluar la estabilidad de los resultados y comprender mejor cómo influyen las decisiones de entrenamiento en el comportamiento de cada agente.
+
+Finalmente, el proyecto nos permitió comprender de forma práctica cómo dos métodos de aprendizaje por refuerzo pueden abordar un mismo problema mediante representaciones y mecanismos de aprendizaje diferentes.
+
 
 ## Referencias
 
