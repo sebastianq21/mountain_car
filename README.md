@@ -122,8 +122,9 @@ oscila aproximadamente entre -135 y -190 hasta terminar cerca de -144. La evalua
 
 ### Esquema del entrenamiento
 
-> **PENDIENTE (dibujo propio, hecho a mano):** ciclo estado → acción → recompensa → actualización de la tabla Q.
-> Insertar aquí la imagen, por ejemplo `![Esquema Q-Learning](docs/esquema_qlearning.jpg)`.
+<img src="docs/esquema_qlearning.jpg" alt="Esquema del entrenamiento de Q-Learning (dibujo propio)" width="480">
+
+Ciclo de un paso de entrenamiento (dibujo propio, con un ejemplo numérico de un paso real del agente entrenado).
 
 ## 5. Deep Q-Network (DQN)
 
@@ -208,9 +209,9 @@ oscilación de la política entre actualizaciones.
 
 ### Esquema del entrenamiento
 
-> **PENDIENTE (dibujo propio, hecho a mano):** ciclo del DQN con el buffer de repetición, la red principal, la red
-> objetivo y la actualización de Bellman.
-> Insertar aquí la imagen, por ejemplo `![Esquema DQN](docs/esquema_dqn.jpg)`.
+<img src="docs/esquema_dqn.jpg" alt="Esquema del entrenamiento de DQN (dibujo propio)" width="480">
+
+Ciclo de un paso de entrenamiento del DQN (dibujo propio): replay buffer, red principal, red objetivo y actualización de Bellman.
 
 ## 6. Comparación de los dos métodos
 
