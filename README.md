@@ -258,7 +258,7 @@ cp saves/dqn_best.pt saves/dqn_mountaincar.pt                         # dejar el
 uv run python scripts/evaluate_agents.py                              # evaluación final (100 episodios)
 uv run python scripts/make_plots.py                                   # gráficas de results/
 ```
-## 9. Concluiones 
+## 9. Conclusiones
 El desarrollo de este proyecto nos permitió implementar y comparar dos métodos de aprendizaje por refuerzo para resolver el problema MountainCar-v0.
 
 El principal desafío del entorno consiste en que el vehículo no tiene suficiente potencia para alcanzar directamente la meta. Por esta razón, el agente debe aprender una secuencia de acciones que le permita acumular impulso y llegar a la bandera.
