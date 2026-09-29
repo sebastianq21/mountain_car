@@ -73,6 +73,51 @@ uv run mountaincar render qlearning      # ver al agente en una ventana
 Comandos disponibles: `version`, `list`, `inspect`, `init`, `train`, `load`, `sim`, `render`, `delete`.
 `<agent>` puede ser `qlearning` o `dqn`.
 
+### Reproducibilidad: semillas y callbacks (API de Python)
+
+`train()` acepta `seed` y `episode_callback` opcionales en ambos agentes; **no hay banderas
+nuevas de CLI** y los comandos existentes conservan su comportamiento, incluida la carga de
+los agentes ya guardados en `saves/`. La semilla hace reproducible una **corrida nueva**:
+mismo código y entorno con la misma semilla permiten repetir los datos de los episodios,
+excepto `time`, que mide el tiempo real y varía entre ejecuciones. **No** promete reanudar un guardado con las mismas acciones (los agentes guardados no persisten el
+estado de los generadores aleatorios) ni igualdad bit a bit entre dispositivos o versiones.
+La semilla fija los generadores globales (Python/NumPy/PyTorch, según el agente) y cada
+reinicio del entorno usa `seed + episode - 1`; dos entrenamientos simultáneos en el mismo
+proceso comparten esos generadores y no están aislados entre sí.
+
+```python
+from mountain_car.agents.dqn import DQNAgent
+from mountain_car.agents.qlearning import QLearningAgent
+
+eventos = []
+
+# Q-Learning: la semilla controla la exploración y los reinicios del entorno.
+ql = QLearningAgent("MountainCar-v0")
+ql.train(2000, seed=42, episode_callback=eventos.append)
+
+# DQN: la semilla del constructor fija la inicialización de los pesos; la de train()
+# la exploración, el muestreo del buffer y los reinicios. Se necesitan las dos para
+# reproducir una corrida completa.
+dqn = DQNAgent("MountainCar-v0", seed=42)
+dqn.train(500, seed=42, episode_callback=eventos.append)
+
+# Cada evento es un dict nuevo y plano:
+#   episode, seed, return, steps, terminated, truncated,
+#   epsilon (el valor usado durante el episodio, ANTES de decaer) y time (segundos).
+```
+
+Los experimentos históricos reportados en este README se entrenaron **sin semilla fija** y
+**no se reentrenaron ni se sembraron retroactivamente**; la semilla no altera los resultados,
+las figuras ni los agentes ya guardados. Una campaña completa con varias semillas (para medir
+la variabilidad entre corridas) queda para un PR posterior; el runner del apéndice ejecuta y
+guarda en CSV **una corrida nueva por semilla**.
+
+Pruebas (cubren reproducibilidad, semántica de `terminated`/`truncated` y callbacks):
+
+```bash
+uv run --frozen python -m unittest discover -s tests -v
+```
+
 ## 3. Estructura del repositorio
 
 ```
@@ -81,7 +126,8 @@ src/mountain_car/
 └── agents/
     ├── qlearning.py     # Q-Learning tabular (ejercicios 1a, 1b, 1c)
     └── dqn.py           # DQN (ejercicios 2a, 2b y 3)
-scripts/                 # evaluación, entrenamiento con puntos de control, experimentos y gráficas
+scripts/                 # evaluación, entrenamiento con puntos de control, runner de experimentos y gráficas
+tests/                   # pruebas de los agentes, semillas y callbacks
 results/                 # logs de entrenamiento/evaluación y gráficas de evidencia
 random_check.py          # cuenta cuántos episodios llega a la bandera un agente aleatorio
 EXERCISES.md             # enunciado de los ejercicios (repo base)
@@ -273,6 +319,70 @@ Como oportunidad de mejora, consideramos importante realizar nuevos experimentos
 
 Finalmente, el proyecto nos permitió comprender de forma práctica cómo dos métodos de aprendizaje por refuerzo pueden abordar un mismo problema mediante representaciones y mecanismos de aprendizaje diferentes.
 
+
+## Apéndice: correr un experimento nuevo y reproducible
+
+`scripts/run_experiment.py` ejecuta **una corrida nueva** del agente `qlearning` o `dqn`:
+entrena con una semilla fija, evalúa la política **codiciosa** (sin exploración) sobre semillas
+distintas de las de entrenamiento y escribe episodios, estadísticas y el punto de control
+**final** en un directorio de salida **nuevo**. No sobrescribe los modelos ni los resultados
+históricos, no modifica la CLI ni los agentes, y no hace selección de "mejor" modelo ni campañas de varias semillas. El
+script legacy `scripts/train_dqn_checkpoints.py` (mejor punto de control por evaluación
+congelada) queda intacto.
+
+```bash
+# Q-Learning tabular (posición/velocidad discretizadas en una cuadrícula 20x20)
+uv run --frozen python scripts/run_experiment.py qlearning \
+    --episodes 2000 --seed 42 --eval-seed 1000000 --eval-episodes 100 \
+    --output-dir results/exp-qlearning-seed42
+
+# DQN: la semilla fija la inicialización de pesos y el entrenamiento
+uv run --frozen python scripts/run_experiment.py dqn \
+    --episodes 700 --seed 42 --eval-seed 1000000 --eval-episodes 100 \
+    --output-dir results/exp-dqn-seed42
+```
+
+Los dos ejemplos usan el mismo banco de 100 semillas de evaluación (`1000000` a `1000099`).
+Para comparar corridas con presupuestos de entrenamiento distintos, mantenga explícitamente
+el mismo `--eval-seed` y `--eval-episodes`; el valor predeterminado depende de `--episodes`.
+
+Argumentos: `--episodes` (obligatorio, positivo), `--seed` (por defecto 42),
+`--eval-episodes` (por defecto 100), `--eval-seed` (por defecto `seed + episodes`, la primera
+semilla fuera del rango de entrenamiento) y `--output-dir` (obligatorio). El agente se elige
+como argumento posicional (`qlearning` o `dqn`).
+
+**Contenido del directorio de salida**
+
+- `training_episodes.csv` y `evaluation_episodes.csv`: una fila por episodio con las columnas
+  `episode, seed, return, steps, terminated, truncated, epsilon, time` (1/0 para los flags;
+  `epsilon` es 0 en evaluación, la política codiciosa efectiva, no la tasa de exploración de
+  entrenamiento).
+- `summary.json` (escrito al final): configuración (entorno, agente, conteos, semillas, corrida
+  nueva, punto de control final), hiperparámetros iniciales (incluido `epsilon_start` capturado
+  antes de entrenar), versiones de Python/gymnasium/numpy/torch, duraciones de entrenamiento y
+  evaluación, y estadísticas recalculables desde los CSV (media, desvío estándar, mín/máx,
+  conteo, llegadas a la bandera, pasos medios).
+- `final_qlearning.pkl` o `final_dqn.pt`: el punto de control **final** del entrenamiento. Está
+  etiquetado como final, **no como "mejor"**: la selección del mejor modelo con una validación
+  separada queda fuera de este runner.
+
+**Reglas y limitaciones**
+
+- El directorio de salida debe ser **nuevo**. Si ya existe (vacío o con contenido, como archivo o
+  enlace simbólico), el runner se detiene sin escribir nada. Si una corrida falla a mitad de
+  camino, los archivos parciales se conservan y el siguiente intento debe usar **otro**
+  directorio nuevo; no hay bandera de reanudación.
+- Las semillas deben estar en `[0, 2^32)` (rango aceptado por NumPy) y los rangos de
+  entrenamiento (`seed .. seed + episodes - 1`) y evaluación
+  (`eval_seed .. eval_seed + eval_episodes - 1`) no deben solaparse; se validan antes de crear
+  el directorio o entrenar.
+- La semilla reproduce una **corrida nueva**: mismo código, entorno y semillas repiten los datos
+  de los episodios **excepto `time`** (el tiempo real varía entre ejecuciones). No promete
+  igualdad entre versiones de bibliotecas o dispositivos, ni reanudar un guardado con las mismas
+  acciones.
+- Este runner no reentrena ni reevalúa los experimentos históricos de este README, no modifica
+  sus cifras y no declara resultados propios de desempeño: su salida es evidencia nueva generada
+  por quien lo ejecute.
 
 ## Referencias
 
