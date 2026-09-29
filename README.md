@@ -73,6 +73,50 @@ uv run mountaincar render qlearning      # ver al agente en una ventana
 Comandos disponibles: `version`, `list`, `inspect`, `init`, `train`, `load`, `sim`, `render`, `delete`.
 `<agent>` puede ser `qlearning` o `dqn`.
 
+### Reproducibilidad: semillas y callbacks (API de Python)
+
+`train()` acepta `seed` y `episode_callback` opcionales en ambos agentes; **no hay banderas
+nuevas de CLI** y los comandos existentes conservan su comportamiento, incluida la carga de
+los agentes ya guardados en `saves/`. La semilla hace reproducible una **corrida nueva**:
+mismo código y entorno con la misma semilla permiten repetir los datos de los episodios,
+excepto `time`, que mide el tiempo real y varía entre ejecuciones. **No** promete reanudar un guardado con las mismas acciones (los agentes guardados no persisten el
+estado de los generadores aleatorios) ni igualdad bit a bit entre dispositivos o versiones.
+La semilla fija los generadores globales (Python/NumPy/PyTorch, según el agente) y cada
+reinicio del entorno usa `seed + episode - 1`; dos entrenamientos simultáneos en el mismo
+proceso comparten esos generadores y no están aislados entre sí.
+
+```python
+from mountain_car.agents.dqn import DQNAgent
+from mountain_car.agents.qlearning import QLearningAgent
+
+eventos = []
+
+# Q-Learning: la semilla controla la exploración y los reinicios del entorno.
+ql = QLearningAgent("MountainCar-v0")
+ql.train(2000, seed=42, episode_callback=eventos.append)
+
+# DQN: la semilla del constructor fija la inicialización de los pesos; la de train()
+# la exploración, el muestreo del buffer y los reinicios. Se necesitan las dos para
+# reproducir una corrida completa.
+dqn = DQNAgent("MountainCar-v0", seed=42)
+dqn.train(500, seed=42, episode_callback=eventos.append)
+
+# Cada evento es un dict nuevo y plano:
+#   episode, seed, return, steps, terminated, truncated,
+#   epsilon (el valor usado durante el episodio, ANTES de decaer) y time (segundos).
+```
+
+Los experimentos históricos reportados en este README se entrenaron **sin semilla fija** y
+**no se reentrenaron ni se sembraron retroactivamente**; la semilla no altera los resultados,
+las figuras ni los agentes ya guardados. Una campaña completa con varias semillas y guardado
+de resultados en CSV queda para un PR posterior.
+
+Pruebas (cubren reproducibilidad, semántica de `terminated`/`truncated` y callbacks):
+
+```bash
+uv run --frozen python -m unittest discover -s tests -v
+```
+
 ## 3. Estructura del repositorio
 
 ```
@@ -82,6 +126,7 @@ src/mountain_car/
     ├── qlearning.py     # Q-Learning tabular (ejercicios 1a, 1b, 1c)
     └── dqn.py           # DQN (ejercicios 2a, 2b y 3)
 scripts/                 # evaluación, entrenamiento con puntos de control, experimentos y gráficas
+tests/                   # pruebas de los agentes, semillas y callbacks
 results/                 # logs de entrenamiento/evaluación y gráficas de evidencia
 random_check.py          # cuenta cuántos episodios llega a la bandera un agente aleatorio
 EXERCISES.md             # enunciado de los ejercicios (repo base)

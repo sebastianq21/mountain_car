@@ -7,7 +7,9 @@ discretised into a simple `n_bins x n_bins` grid -- no hand-tuned bounds and
 no special-casing needed.
 """
 import pickle
+import time
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
 from typing import Self
 
@@ -110,41 +112,83 @@ class QLearningAgent:
             target = reward + self.gamma * np.max(self.q_table[next_state])
         self.q_table[state][action] += self.lr * (target - self.q_table[state][action])
 
-    def train(self, total_episodes: int = 10_000, log_interval: int = 100) -> list[float]:
+    def train(
+        self,
+        total_episodes: int = 10_000,
+        log_interval: int = 100,
+        *,
+        seed: int | None = None,
+        episode_callback: Callable[[dict[str, int | float | bool | None]], None] | None = None,
+    ) -> list[float]:
+        """Train the agent, optionally with deterministic fresh-run episode seeds.
+
+        ``seed`` reseeds NumPy's global RNG (which drives exploration) and
+        re-seeds every environment reset with ``seed + episode - 1``, so a
+        fresh run is reproducible. It only controls the run itself: saved
+        agents do not persist RNG state, so resumed training is not bit-exact,
+        and no cross-NumPy-version or cross-machine determinism is promised.
+
+        ``episode_callback``, when given, is invoked after every episode with
+        a fresh plain dict: episode, seed, return, steps, terminated,
+        truncated, epsilon (the value used during that episode, before decay),
+        and time (seconds elapsed for the episode).
+        """
+        if seed is not None:
+            np.random.seed(seed)
         env = gym.make(self.env_id)
         rewards_history: list[float] = []
 
-        for episode in range(1, total_episodes + 1):
-            obs, _ = env.reset()
-            state = self.discretize(obs)
-            total_reward = 0.0
-            done = False
+        try:
+            for episode in range(1, total_episodes + 1):
+                episode_seed = None if seed is None else seed + episode - 1
+                started = time.perf_counter()
+                episode_epsilon = self.epsilon
+                obs, _ = env.reset() if episode_seed is None else env.reset(seed=episode_seed)
+                state = self.discretize(obs)
+                total_reward = 0.0
+                steps = 0
+                terminated = truncated = False
+                done = False
 
-            while not done:
-                action = self.select_action(state)
-                next_obs, reward, terminated, truncated, _ = env.step(action)
-                done = terminated or truncated
+                while not done:
+                    action = self.select_action(state)
+                    next_obs, reward, terminated, truncated, _ = env.step(action)
+                    done = terminated or truncated
 
-                next_state = self.discretize(next_obs)
-                self._update(state, action, float(reward), next_state, terminated)
+                    next_state = self.discretize(next_obs)
+                    self._update(state, action, float(reward), next_state, terminated)
 
-                state = next_state
-                total_reward += reward
+                    state = next_state
+                    total_reward += reward
+                    steps += 1
 
-            self.epsilon = max(self.epsilon_end, self.epsilon * self.epsilon_decay)
-            self.training_episodes += 1
-            rewards_history.append(total_reward)
+                self.epsilon = max(self.epsilon_end, self.epsilon * self.epsilon_decay)
+                self.training_episodes += 1
+                rewards_history.append(total_reward)
+                if episode_callback is not None:
+                    episode_callback(
+                        {
+                            "episode": episode,
+                            "seed": episode_seed,
+                            "return": total_reward,
+                            "steps": steps,
+                            "terminated": terminated,
+                            "truncated": truncated,
+                            "epsilon": episode_epsilon,
+                            "time": time.perf_counter() - started,
+                        }
+                    )
 
-            if episode % log_interval == 0:
-                avg = np.mean(rewards_history[-log_interval:])
-                print(
-                    f"Episode {episode}/{total_episodes} | "
-                    f"Avg Reward: {avg:.2f} | "
-                    f"Epsilon: {self.epsilon:.4f} | "
-                    f"States visited: {len(self.q_table)}"
-                )
-
-        env.close()
+                if episode % log_interval == 0:
+                    avg = np.mean(rewards_history[-log_interval:])
+                    print(
+                        f"Episode {episode}/{total_episodes} | "
+                        f"Avg Reward: {avg:.2f} | "
+                        f"Epsilon: {self.epsilon:.4f} | "
+                        f"States visited: {len(self.q_table)}"
+                    )
+        finally:
+            env.close()
         return rewards_history
 
     # ── persistence ───────────────────────────────────────────────────

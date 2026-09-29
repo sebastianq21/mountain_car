@@ -10,7 +10,9 @@ Key components:
   - DQNAgent     : the training loop, epsilon-greedy policy, target-net sync
 """
 import random
+import time
 from collections import deque
+from collections.abc import Callable
 from pathlib import Path
 from typing import Self
 
@@ -86,6 +88,15 @@ class DQNAgent:
 
     Hyperparameters are intentionally exposed as constructor args so you
     can experiment with them directly.
+
+    The constructor's ``seed`` only controls neural-network weight
+    initialization: it is applied with ``torch.manual_seed`` before the
+    networks are built, so ``DQNAgent(env_id, seed=42)`` creates fresh,
+    reproducible weights. It cannot make training deterministic, because the
+    weights already exist by the time you call ``train``; pass ``seed`` to
+    ``train`` for reproducible exploration, replay sampling and environment
+    resets on a fresh run. No bit-exact resume (saved agents do not persist
+    RNG state) or cross-device determinism is promised.
     """
 
     def __init__(
@@ -102,6 +113,7 @@ class DQNAgent:
         target_update_freq: int = 10,
         hidden: int = 128,
         repeat_prob: float = 0.9,
+        seed: int | None = None,
     ) -> None:
         self.env_id = env_id
         self.lr = lr
@@ -123,6 +135,13 @@ class DQNAgent:
         env.close()
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        if seed is not None:
+            # Seed before creating any parameters so the weight initialization
+            # is reproducible. This only fixes the weights (see the class
+            # docstring): it does not seed the training loop, which has its own
+            # ``seed`` argument, and it never resets already-learned weights.
+            torch.manual_seed(seed)
 
         self.q_net = QNetwork(self.state_dim, self.action_dim, hidden).to(self.device)
         self.target_net = QNetwork(self.state_dim, self.action_dim, hidden).to(self.device)
@@ -226,47 +245,95 @@ class DQNAgent:
 
     # ── training loop ─────────────────────────────────────────────────
 
-    def train(self, total_episodes: int = 500, log_interval: int = 10) -> list[float]:
+    def train(
+        self,
+        total_episodes: int = 500,
+        log_interval: int = 10,
+        *,
+        seed: int | None = None,
+        episode_callback: Callable[[dict[str, int | float | bool | None]], None] | None = None,
+    ) -> list[float]:
+        """Train the agent, optionally with deterministic fresh-run episode seeds.
+
+        ``seed`` reseeds the Python, NumPy and PyTorch RNGs (exploration,
+        replay sampling) and re-seeds every environment reset with
+        ``seed + episode - 1``, so a fresh run is reproducible. It does not
+        re-create the networks: weight initialization comes from the
+        constructor's ``seed`` argument (or the RNG state at construction), so
+        combine ``DQNAgent(env_id, seed=...)`` with ``train(seed=...)`` to
+        reproduce a whole fresh run. Saved agents do not persist RNG state, so
+        resumed training is not bit-exact, and no cross-device determinism is
+        promised.
+
+        ``episode_callback``, when given, is invoked after every episode with
+        a fresh plain dict: episode, seed, return, steps, terminated,
+        truncated, epsilon (the value used during that episode, before decay),
+        and time (seconds elapsed for the episode).
+        """
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+            torch.manual_seed(seed)
         env = gym.make(self.env_id)
         rewards_history: list[float] = []
 
-        for episode in range(1, total_episodes + 1):
-            obs, _ = env.reset()
-            self._last_action = None
-            total_reward = 0.0
-            done = False
+        try:
+            for episode in range(1, total_episodes + 1):
+                episode_seed = None if seed is None else seed + episode - 1
+                self._last_action = None
+                started = time.perf_counter()
+                episode_epsilon = self.epsilon
+                obs, _ = env.reset() if episode_seed is None else env.reset(seed=episode_seed)
+                total_reward = 0.0
+                steps = 0
+                terminated = truncated = False
+                done = False
 
-            while not done:
-                action = self.select_action(obs)
-                next_obs, reward, terminated, truncated, _ = env.step(action)
-                done = terminated or truncated
+                while not done:
+                    action = self.select_action(obs)
+                    next_obs, reward, terminated, truncated, _ = env.step(action)
+                    done = terminated or truncated
 
-                # Store `terminated`, not `done`: hitting the 200-step time
-                # limit is not a real terminal state, so we must keep
-                # bootstrapping through it.
-                self.buffer.push(obs, action, float(reward), next_obs, terminated)
-                self._learn()
+                    # Store `terminated`, not `done`: hitting the 200-step time
+                    # limit is not a real terminal state, so we must keep
+                    # bootstrapping through it.
+                    self.buffer.push(obs, action, float(reward), next_obs, terminated)
+                    self._learn()
 
-                obs = next_obs
-                total_reward += reward
+                    obs = next_obs
+                    total_reward += float(reward)
+                    steps += 1
 
-            self.epsilon = max(self.epsilon_end, self.epsilon * self.epsilon_decay)
-            self.training_episodes += 1
-            rewards_history.append(total_reward)
+                self.epsilon = max(self.epsilon_end, self.epsilon * self.epsilon_decay)
+                self.training_episodes += 1
+                rewards_history.append(total_reward)
+                if episode_callback is not None:
+                    episode_callback(
+                        {
+                            "episode": episode,
+                            "seed": episode_seed,
+                            "return": total_reward,
+                            "steps": steps,
+                            "terminated": terminated,
+                            "truncated": truncated,
+                            "epsilon": episode_epsilon,
+                            "time": time.perf_counter() - started,
+                        }
+                    )
 
-            if episode % self.target_update_freq == 0:
-                self.target_net.load_state_dict(self.q_net.state_dict())
+                if episode % self.target_update_freq == 0:
+                    self.target_net.load_state_dict(self.q_net.state_dict())
 
-            if episode % log_interval == 0:
-                avg = np.mean(rewards_history[-log_interval:])
-                print(
-                    f"Episode {episode}/{total_episodes} | "
-                    f"Avg Reward: {avg:.2f} | "
-                    f"Epsilon: {self.epsilon:.4f} | "
-                    f"Buffer: {len(self.buffer)}"
-                )
-
-        env.close()
+                if episode % log_interval == 0:
+                    avg = np.mean(rewards_history[-log_interval:])
+                    print(
+                        f"Episode {episode}/{total_episodes} | "
+                        f"Avg Reward: {avg:.2f} | "
+                        f"Epsilon: {self.epsilon:.4f} | "
+                        f"Buffer: {len(self.buffer)}"
+                    )
+        finally:
+            env.close()
         return rewards_history
 
     # ── persistence ───────────────────────────────────────────────────
